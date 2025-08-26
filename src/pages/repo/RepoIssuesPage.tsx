@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Issue, IssueStatus } from '@/lib/types';
 import { NewIssueDialog } from '@/components/NewIssueDialog';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
 const statusIcons: Record<IssueStatus, React.ReactNode> = {
   open: <AlertCircle className="h-4 w-4 text-green-500" />,
   closed: <CheckCircle className="h-4 w-4 text-red-500" />,
@@ -20,6 +21,7 @@ const statusIcons: Record<IssueStatus, React.ReactNode> = {
 export default function RepoIssuesPage() {
   const { user, repo } = useParams<{ user: string; repo: string }>();
   const queryClient = useQueryClient();
+  const { currentUser } = useAuthStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { data: issues, isLoading } = useQuery({
     queryKey: ['issues', user, repo],
@@ -27,7 +29,7 @@ export default function RepoIssuesPage() {
     enabled: !!user && !!repo,
   });
   const mutation = useMutation({
-    mutationFn: (newIssue: { title: string; body: string }) => createIssue(user!, repo!, newIssue),
+    mutationFn: (newIssue: { title: string; body: string; authorId: string }) => createIssue(user!, repo!, newIssue),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['issues', user, repo] });
       toast.success('Issue created successfully!');
@@ -38,7 +40,11 @@ export default function RepoIssuesPage() {
     },
   });
   const handleCreateIssue = (values: { title: string; body: string }) => {
-    mutation.mutate(values);
+    if (!currentUser) {
+      toast.error('You must be logged in to create an issue.');
+      return;
+    }
+    mutation.mutate({ ...values, authorId: currentUser.id });
   };
   return (
     <>

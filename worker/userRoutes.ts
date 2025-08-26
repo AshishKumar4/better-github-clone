@@ -1,10 +1,18 @@
 import { Hono } from "hono";
 import { Env } from './core-utils';
-import { mockRepositories, mockFileTree } from '../src/lib/mock-data';
+import { mockRepositories, mockFileTree, mockUsers } from '../src/lib/mock-data';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
     // Static data routes
     app.get('/api/user/repos', (c) => {
         return c.json({ success: true, data: mockRepositories });
+    });
+    app.get('/api/users/:username', (c) => {
+        const { username } = c.req.param();
+        const user = mockUsers[username];
+        if (user) {
+            return c.json({ success: true, data: user });
+        }
+        return c.json({ success: false, error: 'User not found' }, 404);
     });
     app.get('/api/repos/:user/:repo', (c) => {
         const { user, repo } = c.req.param();
@@ -33,11 +41,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     });
     app.post('/api/repos/:user/:repo/issues', async (c) => {
         const { repo } = c.req.param();
-        const { title, body } = await c.req.json();
-        if (!title || !body) return c.json({ success: false, error: 'Title and body are required' }, 400);
+        const { title, body, authorId } = await c.req.json();
+        if (!title || !body || !authorId) return c.json({ success: false, error: 'Title, body, and authorId are required' }, 400);
         const id = c.env.GlobalDurableObject.idFromName(repo);
         const stub = c.env.GlobalDurableObject.get(id);
-        const newIssue = await stub.createIssue(repo, title, body);
+        const { user } = c.req.param(); // Extract the user (owner) from the path
+        const newIssue = await stub.createIssue(user, repo, title, body, authorId);
         return c.json({ success: true, data: newIssue }, 201);
     });
     app.get('/api/repos/:user/:repo/issues/:id', async (c) => {
@@ -60,15 +69,16 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     app.post('/api/repos/:user/:repo/issues/:id/comments', async (c) => {
         const { repo, id } = c.req.param();
         const issueId = parseInt(id);
-        const { body } = await c.req.json();
-        if (!body) return c.json({ success: false, error: 'Comment body is required' }, 400);
+        const { body, authorId } = await c.req.json();
+        if (!body || !authorId) return c.json({ success: false, error: 'Comment body and authorId are required' }, 400);
         const doId = c.env.GlobalDurableObject.idFromName(repo);
         const stub = c.env.GlobalDurableObject.get(doId);
         try {
-            const newComment = await stub.addComment(repo, issueId, body);
+            const { user } = c.req.param(); // Extract the user (owner) from the path
+            const newComment = await stub.addComment(user, repo, issueId, body, authorId);
             return c.json({ success: true, data: newComment }, 201);
-        } catch (error: any) { // Explicitly type error as 'any' or 'unknown' for safer access
-            return c.json({ success: false, error: error.message || 'An unknown error occurred' }, 400); // Return 400 for client error, provide a default message
+        } catch (error: any) {
+            return c.json({ success: false, error: error.message || 'An unknown error occurred' }, 400);
         }
     });
     app.get('/api/repos/:user/:repo/contents/:path{.+}', async (c) => {
@@ -81,15 +91,16 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     });
     app.post('/api/repos/:user/:repo/contents/:path{.+}', async (c) => {
         const { repo, path } = c.req.param();
-        const { content, message } = await c.req.json();
-        if (content === undefined || !message) return c.json({ success: false, error: 'Content and message are required' }, 400);
+        const { content, message, authorId } = await c.req.json();
+        if (content === undefined || !message || !authorId) return c.json({ success: false, error: 'Content, message, and authorId are required' }, 400);
         const doId = c.env.GlobalDurableObject.idFromName(repo);
         const stub = c.env.GlobalDurableObject.get(doId);
         try {
-            const newCommit = await stub.updateFileContent(repo, path, content, message);
+            const { user } = c.req.param(); // Extract the user (owner) from the path
+            const newCommit = await stub.updateFileContent(user, repo, path, content, message, authorId);
             return c.json({ success: true, data: newCommit }, 201);
-        } catch (error: any) { // Explicitly type error as 'any' or 'unknown' for safer access
-            return c.json({ success: false, error: error.message || 'An unknown error occurred' }, 500); // Return 500 for server error, provide a default message
+        } catch (error: any) {
+            return c.json({ success: false, error: error.message || 'An unknown error occurred' }, 500);
         }
     });
     app.get('/api/repos/:user/:repo/commits', async (c) => {

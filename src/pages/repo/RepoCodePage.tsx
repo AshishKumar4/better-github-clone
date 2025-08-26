@@ -12,11 +12,13 @@ import { cn } from '@/lib/utils';
 import { Editor } from '@monaco-editor/react';
 import { CommitDialog } from '@/components/CommitDialog';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
 export default function RepoCodePage() {
   const { user, repo } = useParams<{ user: string; repo: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activePath = searchParams.get('path') || 'README.md';
   const queryClient = useQueryClient();
+  const { currentUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState<string | undefined>(undefined);
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
@@ -31,7 +33,7 @@ export default function RepoCodePage() {
     enabled: !!user && !!repo && !!activePath,
   });
   const updateFileMutation = useMutation({
-    mutationFn: ({ message }: { message: string }) => updateFileContent(user!, repo!, activePath, editedContent!, message),
+    mutationFn: ({ message, authorId }: { message: string; authorId: string }) => updateFileContent(user!, repo!, activePath, editedContent!, message, authorId),
     onSuccess: () => {
       toast.success('File committed successfully!');
       queryClient.invalidateQueries({ queryKey: ['fileContent', user, repo, activePath] });
@@ -61,7 +63,11 @@ export default function RepoCodePage() {
     }
   };
   const handleCommit = ({ message }: { message: string }) => {
-    updateFileMutation.mutate({ message });
+    if (!currentUser) {
+      toast.error('You must be logged in to commit.');
+      return;
+    }
+    updateFileMutation.mutate({ message, authorId: currentUser.id });
   };
   return (
     <>

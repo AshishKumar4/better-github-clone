@@ -19,7 +19,13 @@ import RepoPullsPage from './pages/repo/RepoPullsPage';
 import IssueDetailPage from './pages/repo/IssueDetailPage';
 import RepoCommitsPage from './pages/repo/RepoCommitsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import LoginPage from './pages/LoginPage';
+import UserProfilePage from './pages/UserProfilePage';
 const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
   {
     path: "/",
     element: <RootLayout />,
@@ -28,6 +34,10 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <DashboardPage />,
+      },
+      {
+        path: "/:user",
+        element: <UserProfilePage />,
       },
       {
         path: "/:user/:repo",

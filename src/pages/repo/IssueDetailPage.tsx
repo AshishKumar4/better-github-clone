@@ -12,6 +12,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
 const commentSchema = z.object({
   body: z.string().min(1, 'Comment cannot be empty.'),
 });
@@ -19,6 +20,7 @@ type CommentFormValues = z.infer<typeof commentSchema>;
 export default function IssueDetailPage() {
   const { user, repo, issueId } = useParams<{ user: string; repo: string; issueId: string }>();
   const queryClient = useQueryClient();
+  const { currentUser } = useAuthStore();
   const { data: issue, isLoading: isIssueLoading } = useQuery({
     queryKey: ['issue', user, repo, issueId],
     queryFn: () => getIssue(user!, repo!, issueId!),
@@ -34,7 +36,7 @@ export default function IssueDetailPage() {
     defaultValues: { body: '' },
   });
   const mutation = useMutation({
-    mutationFn: (newComment: { body: string }) => createComment(user!, repo!, issueId!, newComment),
+    mutationFn: (newComment: { body: string; authorId: string }) => createComment(user!, repo!, issueId!, newComment),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['issueComments', user, repo, issueId] });
       form.reset();
@@ -45,7 +47,11 @@ export default function IssueDetailPage() {
     },
   });
   const handleCommentSubmit = (values: CommentFormValues) => {
-    mutation.mutate(values);
+    if (!currentUser) {
+      toast.error('You must be logged in to comment.');
+      return;
+    }
+    mutation.mutate({ ...values, authorId: currentUser.id });
   };
   return (
     <div className="container max-w-5xl py-8">
