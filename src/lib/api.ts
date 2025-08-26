@@ -1,10 +1,11 @@
 import { QueryClient } from '@tanstack/react-query';
-import { Repository, FileNode, FileContent, Issue, Comment, PullRequest } from './types';
+import { Repository, FileNode, FileContent, Issue, Comment, PullRequest, Commit } from './types';
 export const queryClient = new QueryClient();
 async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
   if (!res.ok) {
-    throw new Error('Network response was not ok');
+    const errorBody = await res.json().catch(() => ({ error: 'Network response was not ok' }));
+    throw new Error(errorBody.error || 'Network response was not ok');
   }
   const data = await res.json();
   if (!data.success) {
@@ -34,3 +35,11 @@ export const createComment = (user: string, repo: string, issueId: string, comme
     body: JSON.stringify(comment),
   });
 };
+export const updateFileContent = (user: string, repo: string, path: string, content: string, message: string): Promise<Commit> => {
+  return fetcher<Commit>(`/api/repos/${user}/${repo}/contents/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, message }),
+  });
+};
+export const getCommits = (user: string, repo: string): Promise<Commit[]> => fetcher<Commit[]>(`/api/repos/${user}/${repo}/commits`);

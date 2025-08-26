@@ -1,22 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRepository } from '@/lib/api';
-import { useParams, Outlet, NavLink } from 'react-router-dom';
-import { GitBranch, Star, Code, AlertCircle, GitPullRequest, ShieldCheck } from 'lucide-react';
+import { useParams, Outlet, NavLink, useLocation } from 'react-router-dom';
+import { GitBranch, Star, Code, AlertCircle, GitPullRequest, History } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const navItems = [
-  { name: 'Code', href: '', icon: Code },
-  { name: 'Issues', href: '/issues', icon: AlertCircle },
-  { name: 'Pull Requests', href: '/pulls', icon: GitPullRequest },
+  { name: 'Code', href: '', icon: Code, value: 'code' },
+  { name: 'Issues', href: '/issues', icon: AlertCircle, value: 'issues' },
+  { name: 'Pull Requests', href: '/pulls', icon: GitPullRequest, value: 'pulls' },
+  { name: 'Commits', href: '/commits', icon: History, value: 'commits' },
 ];
 export default function RepoLayout() {
   const { user, repo } = useParams<{ user: string; repo: string }>();
+  const location = useLocation();
   const { data: repository, isLoading } = useQuery({
     queryKey: ['repository', user, repo],
     queryFn: () => getRepository(user!, repo!),
     enabled: !!user && !!repo,
   });
   const basePath = `/${user}/${repo}`;
+  const activeTab = navItems.find(item => location.pathname.startsWith(basePath + item.href) && (item.href !== '' || location.pathname === basePath))?.value || 'code';
   return (
     <div>
       <div className="border-b">
@@ -47,11 +50,11 @@ export default function RepoLayout() {
       </div>
       <div className="border-b">
         <div className="container max-w-7xl">
-          <Tabs defaultValue="code" className="relative">
+          <Tabs value={activeTab} className="relative">
             <TabsList>
               {navItems.map(item => (
-                <TabsTrigger value={item.name.toLowerCase()} key={item.name} asChild>
-                  <NavLink to={`${basePath}${item.href}`} end className={({ isActive }) => `flex items-center gap-2 px-4 py-2 text-sm font-medium ${isActive ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                <TabsTrigger value={item.value} key={item.name} asChild>
+                  <NavLink to={`${basePath}${item.href}`} end={item.href === ''} className="flex items-center gap-2">
                     <item.icon className="w-4 h-4" />
                     {item.name}
                   </NavLink>

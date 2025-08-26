@@ -54,3 +54,9 @@ export interface PullRequest {
   createdAt: string;
   branch: string;
 }
+export interface Commit {
+  id: string;
+  message: string;
+  author: User;
+  createdAt: string;
+}

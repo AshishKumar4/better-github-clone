@@ -1,19 +1,23 @@
 import { DurableObject } from "cloudflare:workers";
-import { Issue, Comment, Repository } from '../src/lib/types';
-import { mockRepositories, mockIssues, mockComments, mockUsers } from '../src/lib/mock-data';
+import { Issue, Comment, FileContent, Commit } from '../src/lib/types';
+import { mockIssues, mockComments, mockUsers, mockFileContents } from '../src/lib/mock-data';
 interface RepoStorage {
   issues: Issue[];
   comments: Record<number, Comment[]>;
+  files: Record<string, FileContent>;
+  commits: Commit[];
 }
 // **DO NOT MODIFY THE CLASS NAME**
 export class GlobalDurableObject extends DurableObject {
   private async getRepoData(repoName: string): Promise<RepoStorage> {
-    let data: RepoStorage | null = await this.ctx.storage.get(repoName);
+    let data: RepoStorage | undefined = await this.ctx.storage.get(repoName);
     if (!data) {
       // Seed with mock data if it doesn't exist
       data = {
         issues: mockIssues,
         comments: mockComments as Record<number, Comment[]>,
+        files: mockFileContents,
+        commits: [],
       };
       await this.ctx.storage.put(repoName, data);
     }
@@ -56,10 +60,12 @@ export class GlobalDurableObject extends DurableObject {
     if (!data.comments[issueId]) {
       data.comments[issueId] = [];
     }
+    const nextId = (data.comments[issueId].length > 0 ? Math.max(...data.comments[issueId].map(c => {
+      const idPart = parseInt(c.id.split('-').pop()!);
+      return Number.isFinite(idPart) ? idPart : 0;
+    })) : 0) + 1;
     const newComment: Comment = {
-      // Generate a new numeric ID for the comment.
-      // If there are existing comments, find the maximum ID and increment. Otherwise, start from 1.
-      id: (data.comments[issueId].length > 0 ? Math.max(...data.comments[issueId].map(c => typeof c.id === 'string' ? parseInt(c.id.split('-').pop()!) : c.id)) : 0) + 1,
+      id: `comment-${issueId}-${nextId}`,
       body,
       author: mockUsers['ada'], // Hardcoded for now
       createdAt: new Date().toISOString(),
@@ -68,5 +74,29 @@ export class GlobalDurableObject extends DurableObject {
     issue.commentsCount = data.comments[issueId].length;
     await this.ctx.storage.put(repoName, data);
     return newComment;
+  }
+  async getFileContent(repoName: string, path: string): Promise<FileContent | undefined> {
+    const data = await this.getRepoData(repoName);
+    return data.files[path];
+  }
+  async updateFileContent(repoName: string, path: string, content: string, message: string): Promise<Commit> {
+    const data = await this.getRepoData(repoName);
+    if (!data.files[path]) {
+      throw new Error("File not found");
+    }
+    data.files[path].content = content;
+    const newCommit: Commit = {
+      id: crypto.randomUUID(),
+      message,
+      author: mockUsers['ada'], // Hardcoded for now
+      createdAt: new Date().toISOString(),
+    };
+    data.commits.unshift(newCommit);
+    await this.ctx.storage.put(repoName, data);
+    return newCommit;
+  }
+  async getCommits(repoName: string): Promise<Commit[]> {
+    const data = await this.getRepoData(repoName);
+    return data.commits;
   }
 }

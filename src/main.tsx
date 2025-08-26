@@ -17,6 +17,7 @@ import RepoCodePage from './pages/repo/RepoCodePage';
 import RepoIssuesPage from './pages/repo/RepoIssuesPage';
 import RepoPullsPage from './pages/repo/RepoPullsPage';
 import IssueDetailPage from './pages/repo/IssueDetailPage';
+import RepoCommitsPage from './pages/repo/RepoCommitsPage';
 import NotFoundPage from './pages/NotFoundPage';
 const router = createBrowserRouter([
   {
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
           {
             path: "pulls",
             element: <RepoPullsPage />,
+          },
+          {
+            path: "commits",
+            element: <RepoCommitsPage />,
           },
         ],
       },
