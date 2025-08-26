@@ -103,7 +103,7 @@ export const mockLabels: Record<string, Label> = {
 };
 export const mockIssues: Issue[] = [
   {
-    id: '1',
+    id: 1,
     title: 'Fix button alignment on mobile',
     author: mockUsers['grace'],
     status: 'open',
@@ -113,7 +113,7 @@ export const mockIssues: Issue[] = [
     body: 'The main action button is misaligned on screen widths below 480px. It should be centered.'
   },
   {
-    id: '2',
+    id: 2,
     title: 'Implement dark mode',
     author: mockUsers['alan'],
     status: 'in_progress',
@@ -123,7 +123,7 @@ export const mockIssues: Issue[] = [
     body: 'Add a theme toggle to switch between light and dark modes. The theme should be persisted in local storage.'
   },
   {
-    id: '3',
+    id: 3,
     title: 'Update README with setup instructions',
     author: mockUsers['ada'],
     status: 'closed',
@@ -133,15 +133,15 @@ export const mockIssues: Issue[] = [
     body: 'The README.md file is missing instructions on how to set up the project locally.'
   },
 ];
-export const mockComments: Record<string, Comment[]> = {
-  '1': [
+export const mockComments: Record<number, Comment[]> = {
+  1: [
     { id: 'comment-1-1', author: mockUsers['ada'], createdAt: '2024-08-15T11:05:00Z', body: 'I can take a look at this.' },
     { id: 'comment-1-2', author: mockUsers['grace'], createdAt: '2024-08-15T11:10:00Z', body: 'Thanks @ada! Let me know if you need any help.' },
     { id: 'comment-1-3', author: mockUsers['ada'], createdAt: '2024-08-15T14:00:00Z', body: 'I have a fix ready. Will open a PR shortly.' },
   ],
-  '2': [],
+  2: [],
 };
 export const mockPullRequests: PullRequest[] = [
-    { id: '1', title: 'feat: Add user authentication', author: mockUsers['grace'], status: 'open', createdAt: '2024-08-15T18:00:00Z', branch: 'feat/auth' },
-    { id: '2', title: 'fix: Correct responsive layout issues', author: mockUsers['alan'], status: 'merged', createdAt: '2024-08-14T10:00:00Z', branch: 'fix/responsive' },
+    { id: 1, title: 'feat: Add user authentication', author: mockUsers['grace'], status: 'open', createdAt: '2024-08-15T18:00:00Z', branch: 'feat/auth' },
+    { id: 2, title: 'fix: Correct responsive layout issues', author: mockUsers['alan'], status: 'merged', createdAt: '2024-08-14T10:00:00Z', branch: 'fix/responsive' },
 ];

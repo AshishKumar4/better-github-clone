@@ -1,8 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 import { Repository, FileNode, FileContent, Issue, Comment, PullRequest } from './types';
 export const queryClient = new QueryClient();
-async function fetcher<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options);
   if (!res.ok) {
     throw new Error('Network response was not ok');
   }
@@ -20,3 +20,17 @@ export const getIssues = (user: string, repo: string): Promise<Issue[]> => fetch
 export const getIssue = (user: string, repo: string, issueId: string): Promise<Issue> => fetcher<Issue>(`/api/repos/${user}/${repo}/issues/${issueId}`);
 export const getIssueComments = (user: string, repo: string, issueId: string): Promise<Comment[]> => fetcher<Comment[]>(`/api/repos/${user}/${repo}/issues/${issueId}/comments`);
 export const getPullRequests = (user: string, repo: string): Promise<PullRequest[]> => fetcher<PullRequest[]>(`/api/repos/${user}/${repo}/pulls`);
+export const createIssue = (user: string, repo: string, issue: { title: string; body: string }): Promise<Issue> => {
+  return fetcher<Issue>(`/api/repos/${user}/${repo}/issues`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(issue),
+  });
+};
+export const createComment = (user: string, repo: string, issueId: string, comment: { body: string }): Promise<Comment> => {
+  return fetcher<Comment>(`/api/repos/${user}/${repo}/issues/${issueId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(comment),
+  });
+};

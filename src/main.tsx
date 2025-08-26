@@ -3,7 +3,7 @@ enableMapSet();
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import RootLayout from './components/layout/RootLayout.tsx'
+import { RootLayout } from '@/components/layout/RootLayout'
 import {
   createBrowserRouter,
   RouterProvider,
